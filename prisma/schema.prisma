@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgres"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String          @id @default(uuid())
+  email         String          @unique
+  password      String
+  name          String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  clientProfile ClientProfile?
+  onboarding    Onboarding?
+  documents     RagDocument[]
+  outputs       GeneratedOutput[]
+  activityLogs  ActivityLog[]
+}
+
+model ClientProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id])
+  businessName   String
+  industry       String
+  targetAudience String
+  brandVoice     String
+  competitors    String?  // JSON string or comma separated
+  website        String?
+  socialLinks    String?  // JSON string
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Onboarding {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  step      Int      @default(1)
+  data      String   // JSON string storing partial progress
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RagDocument {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  filename  String
+  fileType  String
+  content   String   // Full text content
+  metadata  String?  // JSON string
+  createdAt DateTime @default(now())
+}
+
+model GeneratedOutput {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // 'BRAND_AUDIT', 'STRATEGY', 'CONTENT_CALENDAR', 'CAMPAIGN'
+  title     String?
+  content   String   // JSON string of the structured output
+  createdAt DateTime @default(now())
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String   // 'BRAND_AUDIT', 'STRATEGY', 'CONTENT_CALENDAR', 'CAMPAIGN', 'RESEARCH', 'LOGIN', etc.
+  metadata  String?  // JSON string with additional details (e.g., business name, duration)
+  duration  Int?     // Duration in milliseconds
+  status    String   @default("success") // 'success', 'failed', 'pending'
+  createdAt DateTime @default(now())
+  
+  @@index([userId, createdAt])
+  @@index([action])
+}
+
